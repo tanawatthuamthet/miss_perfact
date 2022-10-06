@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<link rel="stylesheet" href="./css/style.css" />
+
+</head>
+<body>
+	<div id="login">
+		<center>
+			<img src="./images/logo.jpg" width="20%">
+			<div class="brand">
+				
+				<img src="./images/logolab.png">
+				<img src="./images/logoofy.png">
+			</div>
+			<input type="text" id="username">
+			<input type="password" id="password">
+			<br>
+			<button id="login_system">login</button>
+			<p>Develop By Tanawat Thuamthet</p>
+		</center>
+		
+	</div>
+	<div id="main">
+		<center>
+			<img src="./images/logo.jpg" class="logo">
+		</center>
+		<div class="box" >
+			<button id="btn_choose">ส่งคะแนน</button>
+		</div>
+		<div>
+			<center>
+				<p id="round"></p>
+				<p id="user"></p>
+				<!--
+				<p id="status"></p>
+				-->
+			</center>
+			
+		</div>
+		<div id="content">
+	
+		</div>
+		<center>
+			<p>Develop By Tanawat Thuamthet</p>
+		</center>
+		
+		<div class="ocean">
+			<div class="wave"></div>
+			<div class="wave"></div>
+			<div class="wave"></div>
+		</div>
+	</div>
+	
+	<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script type="module">
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.4/firebase-app.js";
+		import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.8.4/firebase-analytics.js";
+		import { getDatabase,ref ,set, onValue,update } from "https://www.gstatic.com/firebasejs/9.8.4/firebase-database.js";
+	  
+	  
+		var firebaseConfig = {
+			  	apiKey: "AIzaSyDzIVZkK0MpkpAEmPRyj8eSYodYuDTYad4",
+				authDomain: "authentication-d30fd.firebaseapp.com",
+				databaseURL: "https://authentication-d30fd-default-rtdb.firebaseio.com",
+				projectId: "authentication-d30fd",
+				storageBucket: "authentication-d30fd.appspot.com",
+				messagingSenderId: "629145001219",
+				appId: "1:629145001219:web:bbf7a92314b3f7c46d9d36"
+		};
+		
+		
+		
+		var app = initializeApp(firebaseConfig);
+		var analytics = getAnalytics(app);
+		var db = getDatabase();
+		var starCountRef = ref(db, 'mis_perfect/member');
+
+		var round = 1
+		var score = 1
+		var people = []
+		var score_set = [1,1,1,1,5]
+		var user = "temp"
+		var username = ""
+		var round_system = 1
+		var name_state = [
+			'รอบห้องดำ',
+			'รอบเปิดตัว',
+			'รอบชุดว่ายน้ำ',
+			'รอบราตรี',
+			'รอบตอบคำถาม 14 คน',
+			'รอบตอบคำถาม 4 คน',
+		]
+		onValue(starCountRef, (snapshot) => {
+			const data = snapshot.val();
+			$('#content').empty()
+			Object.keys(data).forEach((ht)=>{
+				$('#content').append("<img src='./images/"+ht.replace("_"," ")+".jpg' id='"+ht+"'>")
+				document.getElementById(ht).addEventListener('click',()=>{
+					
+					if(people.includes(ht)){
+						document.getElementById(ht).style.border = "5px solid transparent"
+						const index = people.indexOf(ht);
+						if (index > -1) { 
+							people.splice(index, 1); 
+						}
+						
+					}else{
+						people.push(ht)
+						document.getElementById(ht).style.border = "5px solid RED"
+					}
+					console.log(people)
+				})
+
+			})
+
+
+			document.getElementById('btn_choose').addEventListener('click',()=>{
+				if(round != round_system){
+					Swal.fire(
+								'แจ้งเตือน!',
+								'คุณโหวตคะแนนรอบนี้ไปแล้ว',
+								'warning'
+								)
+				}else{
+					Swal.fire({
+						title: 'ต้องการเพิ่มข้อมูลหรือไม่',
+						text: "ตรวจสอบให้มั่นใจก่อนเลือกทุกครั้ง!",
+						icon: 'success',
+						showCancelButton: true,
+						confirmButtonColor: '#3085d6',
+						cancelButtonColor: '#d33',
+						confirmButtonText: 'เลือก'
+					}).then((result) => {
+						if (result.isConfirmed) {
+							Swal.fire(
+								'สำเร็จ!',
+								'เพิ่มข้อมูลสำเร็จ',
+								'success'
+								)
+							
+							people.forEach(data=>{
+								var ref_data = ref(db, 'mis_perfect/member/'+data+'/round_'+round);
+								onValue(ref_data, (snapshot_inner) => {
+									const data_inner = snapshot_inner.val();
+									let tmp = 'round_'+round
+									console.log(tmp)
+
+									let updates = {}
+									updates['mis_perfect/member/'+data+'/'+tmp] = (data_inner!="none"?data_inner+score_set[round]:score_set[round])
+									console.log(updates)
+									update(ref(db), updates)
+									
+								},{
+									onlyOnce: true
+								});
+								document.getElementById(data).style.border = "5px solid transparent"
+								const index = people.indexOf(data);
+								
+							})
+							people = []
+							var ref_data_system = ref(db, 'mis_perfect/Admin/'+username+'/state');
+							onValue(ref_data_system, (snapshot_inner) => {
+								const data_inner = snapshot_inner.val();
+								let user_list = {}
+								console.log('mis_perfect/Admin/'+username+'/state',data_inner)
+								user_list['mis_perfect/Admin/'+username+'/state'] = (data_inner!="none"?data_inner+1:1)
+								round = (data_inner!="none"?data_inner+1:1)
+								//document.getElementById('status').innerHTML = (round == round_system)
+								update(ref(db), user_list)
+							},{
+								onlyOnce: true
+							})
+							var ref_data_feed = ref(db, 'mis_perfect/Admin/');
+							onValue(ref_data_feed, (snapshot_inner) => {
+								const data_inner = snapshot_inner.val();
+								let value_mix = 0
+								let popular = 0
+								Object.entries(data_inner).forEach(([key, value]) => {
+									console.log(`${key} ${value}`);
+									if(value.state != round_system){
+										value_mix += 1
+									}
+									if(value['popular']){
+										if(value['popular'] != 0){
+											popular = value['popular']
+										}
+									}
+								});
+								console.log(Object.values(data_inner),Object.values(data_inner).length,value_mix)
+								if(Object.values(data_inner).length == value_mix && round_system < 4){
+									let user_list = {}
+									user_list['mis_perfect/System/round'] = round_system+1
+									
+									update(ref(db), user_list)
+								}else if(Object.values(data_inner).length == value_mix && round_system == 4){
+									let user_list = {}
+									user_list['mis_perfect/System/round'] = round_system+1
+									
+									
+									update(ref(db), user_list)
+
+									let count_member = 0
+									let mix = []
+									let name = []
+									const starCountRefFeed = ref(db, 'mis_perfect/member');
+									onValue(starCountRefFeed, (snapshot_feed) => {
+										$('#content').empty()
+										const data = snapshot_feed.val();
+										console.log(data)
+										Object.keys(data).forEach((dt)=>{
+										let lit_val = Object.values(data[dt])
+										let sum = 0
+										if(data[dt]['popular'] == 1){
+											mix.push(100)
+											name.push(dt)
+										}else{
+											lit_val.forEach((dtt)=>{
+												console.log(dtt)
+												sum += (dtt['round_5'] == 'none') ? 0 : parseInt(dtt)
+											})
+											mix.push(sum)
+											name.push(dt)
+										}
+										//$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg">`)
+										})
+										for(let n=0;n<mix.length;n++){
+											
+											for(let y=n+1;y<mix.length;y++){
+												if(mix[n] < mix[y]){
+												let tmp_a = mix[n]
+												let tmp_b = mix[y]
+												mix[n] = tmp_b
+												mix[y] = tmp_a
+
+												let tmp_name_a = name[n]
+												let tmp_name_b = name[y]
+												name[n] = tmp_name_b
+												name[y] = tmp_name_a
+												console.log(mix[n],mix[y])
+												}
+											}
+										}
+										count_member = 0
+										let limit_count = (popular==0)?14:15
+										name.forEach((dt)=>{
+											count_member+= 1
+											if(count_member <= limit_count){
+												$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg" id='${dt}'>`)
+												
+												document.getElementById(dt).addEventListener('click',()=>{
+													
+													if(people.includes(dt)){
+														document.getElementById(dt).style.border = "5px solid transparent"
+														const index = people.indexOf(dt);
+														if (index > -1) { 
+															people.splice(index, 1); 
+														}
+														
+													}else{
+														people.push(dt)
+														document.getElementById(dt).style.border = "5px solid RED"
+													}
+													console.log(people)
+												})
+											
+											
+											}  
+											
+										})
+									},{
+										onlyOnce: true
+									});
+								}else if(Object.values(data_inner).length == value_mix && round_system >= 5){
+									let user_list = {}
+									user_list['mis_perfect/System/round'] = round_system+1
+									
+									update(ref(db), user_list)
+
+									let count_member = 0
+									let mix = []
+									let name = []
+									const starCountRefFeed = ref(db, 'mis_perfect/member');
+									onValue(starCountRefFeed, (snapshot_feed) => {
+										$('#content').empty()
+										const data = snapshot_feed.val();
+										console.log(data)
+										Object.keys(data).forEach((dt)=>{
+
+										let lit_val = Object.values(data[dt])
+										let sum = 0
+										if(data[dt]['popular'] == 2){
+											mix.push(100)
+											name.push(dt)
+										}else{
+											lit_val.forEach((dtt)=>{
+												console.log(dtt)
+												sum += (dtt['round_5'] == 'none') ? 0 : parseInt(dtt)
+											})
+											mix.push(sum)
+											name.push(dt)
+										}
+										//$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg">`)
+										})
+										for(let n=0;n<mix.length;n++){
+											
+											for(let y=n+1;y<mix.length;y++){
+												if(mix[n] < mix[y]){
+												let tmp_a = mix[n]
+												let tmp_b = mix[y]
+												mix[n] = tmp_b
+												mix[y] = tmp_a
+
+												let tmp_name_a = name[n]
+												let tmp_name_b = name[y]
+												name[n] = tmp_name_b
+												name[y] = tmp_name_a
+												console.log(mix[n],mix[y])
+												}
+											}
+										}
+										count_member = 0
+										let limit_count = (popular==0)?4:5
+										name.forEach((dt)=>{
+											count_member+= 1
+											if(count_member <= limit_count){
+												$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg" id='${dt}'>`)
+												if(round_system < 6){
+													document.getElementById(dt).addEventListener('click',()=>{
+													
+														if(people.includes(dt)){
+															document.getElementById(dt).style.border = "5px solid transparent"
+															const index = people.indexOf(dt);
+															if (index > -1) { 
+																people.splice(index, 1); 
+															}
+															
+														}else{
+															people.push(dt)
+															document.getElementById(dt).style.border = "5px solid RED"
+														}
+														console.log(people)
+													})
+												}
+											
+											
+											}  
+											
+										})
+									},{
+										onlyOnce: true
+									});
+								}
+								
+							},{
+								onlyOnce: true
+							})
+						}else{
+
+						}
+					})
+				}
+				
+			})
+			
+		},{
+			onlyOnce: true
+		});
+
+		document.getElementById('content').addEventListener('wheel',(e)=>{
+			console.log(e)
+			document.getElementById('content').scrollLeft += e.deltaY;
+		})
+
+		document.getElementById('login_system').addEventListener('click',()=>{
+			var ref_data = ref(db, 'mis_perfect/Admin/'+document.getElementById('username').value);
+			onValue(ref_data, (snapshot_inner) => {
+				const data_inner = snapshot_inner.val();
+				
+				if(data_inner.password == document.getElementById('password').value){
+					document.getElementById('login').style.display = 'none'
+					document.getElementById('main').style.display = 'block'
+					round = data_inner.state
+					user = data_inner.name
+					username = document.getElementById('username').value
+					document.getElementById('user').innerHTML = "กรรมการ "+user
+					
+					var ref_data_system = ref(db, 'mis_perfect/System/round');
+					onValue(ref_data_system, (val_system) => {
+						
+						round_system = parseInt(val_system.val())
+						console.log(round_system)
+						document.getElementById('round').innerHTML = name_state[round_system-1]
+						//document.getElementById('status').innerHTML = (round == round_system)
+						if(round_system  == 4){
+							let count_member = 0
+							let mix = []
+							let name = []
+							let popular = 0
+									const starCountRefFeed = ref(db, 'mis_perfect/member');
+									onValue(starCountRefFeed, (snapshot_feed) => {
+										$('#content').empty()
+										const data = snapshot_feed.val();
+										console.log(data)
+										Object.keys(data).forEach((dt)=>{
+											
+											let lit_val = Object.values(data[dt])
+											let sum = 0
+											if(data[dt]['popular'] == 1){
+												popular = 1
+												mix.push(100)
+												name.push(dt)
+											}else{
+												lit_val.forEach((dtt)=>{
+													console.log(dtt)
+													sum += (dtt['round_5'] == 'none') ? 0 : parseInt(dtt)
+												})
+												mix.push(sum)
+												name.push(dt)
+											}
+											//$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg">`)
+										})
+										for(let n=0;n<mix.length;n++){
+											
+											for(let y=n+1;y<mix.length;y++){
+												if(mix[n] < mix[y]){
+												let tmp_a = mix[n]
+												let tmp_b = mix[y]
+												mix[n] = tmp_b
+												mix[y] = tmp_a
+
+												let tmp_name_a = name[n]
+												let tmp_name_b = name[y]
+												name[n] = tmp_name_b
+												name[y] = tmp_name_a
+												console.log(mix[n],mix[y])
+												}
+											}
+										}
+										console.log(mix,name)
+										count_member = 0
+										let limit_count = (popular==0)?14:15
+										name.forEach((dt)=>{
+											count_member+= 1
+											if(count_member <= limit_count){
+												$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg" id='${dt}'>`)
+												
+												document.getElementById(dt).addEventListener('click',()=>{
+													
+													if(people.includes(dt)){
+														document.getElementById(dt).style.border = "5px solid transparent"
+														const index = people.indexOf(dt);
+														if (index > -1) { 
+															people.splice(index, 1); 
+														}
+														
+													}else{
+														people.push(dt)
+														document.getElementById(dt).style.border = "5px solid RED"
+													}
+													console.log(people)
+												})
+											
+											
+											}  
+											
+										})
+									},{
+										onlyOnce: true
+									});
+						}else if(round_system  >= 5){
+							let count_member = 0
+							let mix = []
+							let name = []
+							let popular = 0
+									const starCountRefFeed = ref(db, 'mis_perfect/member');
+									onValue(starCountRefFeed, (snapshot_feed) => {
+										$('#content').empty()
+										const data = snapshot_feed.val();
+										console.log(data)
+										Object.keys(data).forEach((dt)=>{
+										let lit_val = Object.values(data[dt])
+										let sum = 0
+										console.log(lit_val,data[dt]['popular'])
+										if(data[dt]['popular'] == 2){
+											popular = 2
+											mix.push(100)
+											name.push(dt)
+										}else{
+											lit_val.forEach((dtt)=>{
+												
+												sum += (dtt['round_5'] == 'none') ? 0 : parseInt(dtt)
+											})
+											mix.push(sum)
+											name.push(dt)
+										}
+										
+										
+										//console.log(mix,name)
+										//$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg">`)
+										})
+										for(let n=0;n<mix.length;n++){
+											
+											for(let y=n+1;y<mix.length;y++){
+												if(mix[n] < mix[y]){
+												let tmp_a = mix[n]
+												let tmp_b = mix[y]
+												mix[n] = tmp_b
+												mix[y] = tmp_a
+
+												let tmp_name_a = name[n]
+												let tmp_name_b = name[y]
+												name[n] = tmp_name_b
+												name[y] = tmp_name_a
+												//console.log(mix[n],mix[y])
+												}
+											}
+										}
+										console.log(mix,name)
+										count_member = 0
+										let limit_count = (popular==0)?14:15
+										if(round_system == 6){
+											limit_count = (popular==0)?4:5
+										}
+										name.forEach((dt)=>{
+											count_member+= 1
+											if(count_member <= limit_count){
+												$("#content").append(`<img src="./images/${dt.replace('_',' ')}.jpg" id='${dt}'>`)
+												if(round_system < 6){
+													document.getElementById(dt).addEventListener('click',()=>{
+													
+														if(people.includes(dt)){
+															document.getElementById(dt).style.border = "5px solid transparent"
+															const index = people.indexOf(dt);
+															if (index > -1) { 
+																people.splice(index, 1); 
+															}
+															
+														}else{
+															people.push(dt)
+															document.getElementById(dt).style.border = "5px solid RED"
+														}
+														console.log(people)
+													})
+												}
+											}  
+											
+										})
+									},{
+										onlyOnce: true
+									});
+						}
+					},{
+						onlyOnce: false
+					});
+				}
+								
+			},{
+				onlyOnce: true
+			});
+		})
+		
+	</script>
+
+	<script>
+		function vote(){
+			
+		}
+	</script>
+
+</body>
+</html>

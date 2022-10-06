@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<link rel="stylesheet" href="./css/style.css" />
+
+</head>
+<body>
+	<div id="main" style="display: block;">
+		<center>
+			<img src="./images/logo.jpg" class="logo">
+		</center>
+		<div class="box" >
+			<select id="popular_vote">
+				<option value="1">popular รอบ 14 คน</option>
+				<option value="2">popular รอบ 4 คน</option>
+			</select>
+			<button id="btn_choose">ส่งคะแนน</button>
+		</div>
+		<div>
+			<center>
+				<p id="round"></p>
+				<p id="user"></p>
+				<!--
+				<p id="status"></p>
+				-->
+			</center>
+			
+		</div>
+		<div id="content">
+	
+		</div>
+		<center>
+			<p>Develop By Tanawat Thuamthet</p>
+		</center>
+		<div class="ocean">
+			<div class="wave"></div>
+			<div class="wave"></div>
+			<div class="wave"></div>
+		</div>
+	</div>
+	
+	<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script type="module">
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.4/firebase-app.js";
+		import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.8.4/firebase-analytics.js";
+		import { getDatabase,ref ,set, onValue,update } from "https://www.gstatic.com/firebasejs/9.8.4/firebase-database.js";
+	  
+	  
+		var firebaseConfig = {
+			  	apiKey: "AIzaSyDzIVZkK0MpkpAEmPRyj8eSYodYuDTYad4",
+				authDomain: "authentication-d30fd.firebaseapp.com",
+				databaseURL: "https://authentication-d30fd-default-rtdb.firebaseio.com",
+				projectId: "authentication-d30fd",
+				storageBucket: "authentication-d30fd.appspot.com",
+				messagingSenderId: "629145001219",
+				appId: "1:629145001219:web:bbf7a92314b3f7c46d9d36"
+		};
+		
+		
+		
+		var app = initializeApp(firebaseConfig);
+		var analytics = getAnalytics(app);
+		var db = getDatabase();
+		var starCountRef = ref(db, 'mis_perfect/member');
+
+		var round = 1
+		var score = 1
+		var people = []
+		var score_set = [1,1,1,1,5]
+		var user = "temp"
+		var username = ""
+		var round_system = 1
+		var popular_vote = 0
+		var name_state = [
+			'รอบห้องดำ',
+			'รอบเปิดตัว',
+			'รอบชุดว่ายน้ำ',
+			'รอบราตรี',
+			'รอบตอบคำถาม 14 คน',
+			'รอบตอบคำถาม 4 คน',
+		]
+		onValue(starCountRef, (snapshot) => {
+			const data = snapshot.val();
+			$('#content').empty()
+			Object.keys(data).forEach((ht)=>{
+				$('#content').append("<img src='./images/"+ht.replace("_"," ")+".jpg' id='"+ht+"'>")
+				document.getElementById(ht).addEventListener('click',()=>{
+					
+					if(people.includes(ht)){
+						document.getElementById(ht).style.border = "5px solid transparent"
+						const index = people.indexOf(ht);
+						if (index > -1) { 
+							people.splice(index, 1); 
+						}
+						
+					}else{
+						people.push(ht)
+						document.getElementById(ht).style.border = "5px solid RED"
+					}
+					console.log(people)
+				})
+
+			})
+
+
+			document.getElementById('btn_choose').addEventListener('click',()=>{
+				if(round != round_system){
+					Swal.fire(
+								'แจ้งเตือน!',
+								'คุณโหวตคะแนนรอบนี้ไปแล้ว',
+								'warning'
+								)
+				}else{
+					popular_vote = document.getElementById('popular_vote').value
+					Swal.fire({
+						title: 'ต้องการเพิ่มข้อมูลหรือไม่',
+						text: "ตรวจสอบให้มั่นใจก่อนเลือกทุกครั้ง!",
+						icon: 'success',
+						showCancelButton: true,
+						confirmButtonColor: '#3085d6',
+						cancelButtonColor: '#d33',
+						confirmButtonText: 'เลือก'
+					}).then((result) => {
+						if (result.isConfirmed) {
+							Swal.fire(
+								'สำเร็จ!',
+								'โหวต popular '+popular_vote+' สำเร็จ',
+								'success'
+								)
+							
+							people.forEach(data=>{
+								let updates = {}
+								updates['mis_perfect/member/'+data+'/popular'] = parseInt(popular_vote)
+								console.log(updates)
+								update(ref(db), updates)
+
+								document.getElementById(data).style.border = "5px solid transparent"
+								const index = people.indexOf(data);
+								
+							})
+							people = []
+							
+						}else{
+
+						}
+					})
+				}
+				
+			})
+			
+		},{
+			onlyOnce: true
+		});
+
+		document.getElementById('content').addEventListener('wheel',(e)=>{
+			console.log(e)
+			document.getElementById('content').scrollLeft += e.deltaY;
+		})
+	</script>
+
+
+</body>
+</html>
